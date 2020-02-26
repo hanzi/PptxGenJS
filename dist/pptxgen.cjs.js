@@ -1,4 +1,4 @@
-/* PptxGenJS 3.2.0-beta @ 2020-02-13T05:17:34.687Z */
+/* PptxGenJS 3.2.0-beta @ 2020-02-26T09:46:54.468Z */
 'use strict';
 
 var JSZip = require('jszip');
@@ -4709,7 +4709,7 @@ function makeChartType(chartType, data, opts, valAxisId, catAxisId, isMultiTypeC
                     strXml += '    <c:numRef>';
                     strXml += '      <c:f>Sheet1!$' + getExcelColName(idx + 1) + '$2:$' + getExcelColName(idx + 1) + '$' + (obj.labels.length + 1) + '</c:f>';
                     strXml += '      <c:numCache>';
-                    strXml += '        <c:formatCode>General</c:formatCode>';
+                    strXml += '        <c:formatCode>' + (opts.dataTableFormatCode || 'General') + '</c:formatCode>';
                     strXml += '	       <c:ptCount val="' + obj.labels.length + '"/>';
                     obj.values.forEach(function (value, idx) {
                         strXml += '<c:pt idx="' + idx + '"><c:v>' + (value || value === 0 ? value : '') + '</c:v></c:pt>';
