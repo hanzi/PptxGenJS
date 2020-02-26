@@ -131,6 +131,7 @@ export interface IChartOpts extends PositionOptions, OptsChartGridLine {
 	dataLabelPosition?: 'b' | 'bestFit' | 'ctr' | 'l' | 'r' | 't' | 'inEnd' | 'outEnd' | 'bestFit'
 	dataNoEffects?: string
 	dataTableFontSize?: number
+	dataTableFormatCode?: string
 	displayBlanksAs?: string
 	fill?: string
 	hasArea?: boolean
