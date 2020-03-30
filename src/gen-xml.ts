@@ -1129,9 +1129,10 @@ export function genXmlTextBody(slideObj: ISlideObject | ITableCell): string {
 			strSlideXml += '</a:p><a:p>' + paragraphPropXml
 		}
 
-		// C: Handle legacy 'breakLine' property
-		if (textObj.options.breakLine) {
-			textObj.text + CRLF
+		// C: Handle 'breakLine' property
+		// This will just end a line break to the end of each text element, _unless_ it's the last one
+		if (textObj.options.breakLine && idx < arrTextObjects.length - 1) {
+			textObj.text += CRLF
 		}
 
 		// D: Add formatted textrun
