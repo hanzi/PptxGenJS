@@ -1005,29 +1005,14 @@ function genXmlTextRunProperties(opts: IObjectOptions | ITextOpts, isDefault: bo
  * @return {string} XML string
  */
 function genXmlTextRun(textObj: IText): string {
-	let arrLines = []
-	let paraProp = ''
-	let xmlTextRun = ''
-
 	// 1: ADD runProperties
-	let startInfo = genXmlTextRunProperties(textObj.options, false)
+	const runProperties = genXmlTextRunProperties(textObj.options, false)
 
-	// 2: LINE-BREAKS/MULTI-LINE: Split text into multi-p:
-	arrLines = textObj.text.split(CRLF)
-	if (arrLines.length > 1) {
-		arrLines.forEach((line, idx) => {
-			xmlTextRun += '<a:r>' + startInfo + '<a:t>' + encodeXmlEntities(line)
-			// Stop/Start <p>aragraph as long as there is more lines ahead (otherwise its closed at the end of this function)
-			if (idx + 1 < arrLines.length) xmlTextRun += (textObj.options.breakLine ? CRLF : '') + '</a:t></a:r>'
-		})
-	} else {
-		// Handle cases where addText `text` was an array of objects - if a text object doesnt contain a '\n' it still need alignment!
-		// The first pPr-align is done in makeXml - use line countr to ensure we only add subsequently as needed
-		xmlTextRun = (textObj.options.align && textObj.options.lineIdx > 0 ? paraProp : '') + '<a:r>' + startInfo + '<a:t>' + encodeXmlEntities(textObj.text)
-	}
-
-	// Return paragraph with text run
-	return xmlTextRun + '</a:t></a:r>'
+	// 2: HANDLE LINE BREAKS
+	return textObj.text
+		.split(/\r*\n/)
+		.map(line => `<a:r>${runProperties}<a:t>${encodeXmlEntities(line)}</a:t></a:r>`)
+		.join('<a:br/>');
 }
 
 /**
@@ -1105,52 +1090,13 @@ export function genXmlTextBody(slideObj: ISlideObject | ITableCell): string {
 		addText( [{text'line1\n line2'}, {text:'end word'}] )
 	*/
 	// A: Transform string/number into complex object
-	if (typeof slideObj.text === 'string' || typeof slideObj.text === 'number') {
-		slideObj.text = [{ text: slideObj.text.toString(), options: opts || {} }]
+	if (!Array.isArray(slideObj.text)) {
+		arrTextObjects = [{ text: slideObj.text.toString(), options: opts || {} }]
+	} else {
+		arrTextObjects = slideObj.text
 	}
 
-	// STEP 2: Grab options, format line-breaks, etc.
-	if (Array.isArray(slideObj.text)) {
-		slideObj.text.forEach((obj, idx) => {
-			// A: Set options
-			obj.options = obj.options || opts || {}
-			if (idx === 0 && obj.options && !obj.options.bullet && opts.bullet) obj.options.bullet = opts.bullet
-
-			// B: Cast to text-object and fix line-breaks (if needed)
-			if (typeof obj.text === 'string' || typeof obj.text === 'number') {
-				// 1: Convert "\n" or any variation into CRLF
-				obj.text = obj.text.toString().replace(/\r*\n/g, CRLF)
-
-				// 2: Handle strings that contain "\n"
-				if (obj.text.indexOf(CRLF) > -1) {
-					// Remove trailing linebreak (if any) so the "if" below doesnt create a double CRLF+CRLF line ending!
-					obj.text = obj.text.replace(/\r\n$/g, '')
-					// Plain strings like "hello \n world" or "first line\n" need to have lineBreaks set to become 2 separate lines as intended
-					obj.options.breakLine = true
-				}
-
-				// 3: Add CRLF line ending if `breakLine`
-				if (obj.options.breakLine && !obj.options.bullet && !obj.options.align && idx + 1 < slideObj.text.length) obj.text += CRLF
-			}
-
-			// C: If text string has line-breaks, then create a separate text-object for each (much easier than dealing with split inside a loop below)
-			if (obj.options.breakLine || obj.text.indexOf(CRLF) > -1) {
-				obj.text.split(CRLF).forEach((line, lineIdx) => {
-					// Add line-breaks if not bullets/aligned (we add CRLF for those below in STEP 3)
-					// NOTE: Use "idx>0" so lines wont start with linebreak (eg:empty first line)
-					arrTextObjects.push({
-						text: (lineIdx > 0 && obj.options.breakLine && !obj.options.bullet && !obj.options.align ? CRLF : '') + line,
-						options: obj.options,
-					})
-				})
-			} else {
-				// NOTE: The replace used here is for non-textObjects (plain strings) eg:'hello\nworld'
-				arrTextObjects.push(obj)
-			}
-		})
-	}
-
-	// STEP 3: Add bodyProperties
+	// STEP 2: Add bodyProperties
 	{
 		// A: 'bodyPr'
 		strSlideXml += genXmlBodyProperties(slideObj)
@@ -1169,43 +1115,30 @@ export function genXmlTextBody(slideObj: ISlideObject | ITableCell): string {
 		}
 	}
 
-	// STEP 4: Loop over each text object and create paragraph props, text run, etc.
+	// STEP 3: Loop over each text object and create paragraph props, text run, etc.
 	arrTextObjects.forEach((textObj, idx) => {
-		// Clear/Increment loop vars
-		let paragraphPropXml = '<a:pPr ' + (textObj.options.rtlMode ? ' rtl="1" ' : '')
-		textObj.options.lineIdx = idx
-
 		// A: Inherit pPr-type options from parent shape's `options`
-		textObj.options.align = textObj.options.align || opts.align
-		textObj.options.lineSpacing = textObj.options.lineSpacing || opts.lineSpacing
-		textObj.options.indentLevel = textObj.options.indentLevel || opts.indentLevel
-		textObj.options.paraSpaceBefore = textObj.options.paraSpaceBefore || opts.paraSpaceBefore
-		textObj.options.paraSpaceAfter = textObj.options.paraSpaceAfter || opts.paraSpaceAfter
+		textObj.options = Object.assign(opts, textObj.options)
 
-		textObj.options.lineIdx = idx
-		paragraphPropXml = genXmlParagraphProperties(textObj, false)
-
-		// B: Start paragraph if this is the first text obj, or if current textObj is about to be bulleted or aligned
+		// B: Start paragraph if this is the first text obj, or if current textObj is about to be bulleted
+		const paragraphPropXml = genXmlParagraphProperties(textObj, false)
 		if (idx === 0) {
 			// Add paragraphProperties right after <p> before textrun(s) begin
 			strSlideXml += '<a:p>' + paragraphPropXml
-		} else if (idx > 0 && (typeof textObj.options.bullet !== 'undefined' || (textObj.options.align != (arrTextObjects[idx - 1].options.align || opts.align)))) {
+		} else if (textObj.options.bullet) {
 			strSlideXml += '</a:p><a:p>' + paragraphPropXml
 		}
 
-		// C: Inherit any main options (color, fontSize, etc.)
-		// We only pass the text.options to genXmlTextRun (not the Slide.options),
-		// so the run building function cant just fallback to Slide.color, therefore, we need to do that here before passing options below.
-		Object.entries(opts).forEach(([key, val]) => {
-			// NOTE: This loop will pick up unecessary keys (`x`, etc.), but it doesnt hurt anything
-			if (key !== 'bullet' && !textObj.options[key]) textObj.options[key] = val
-		})
+		// C: Handle legacy 'breakLine' property
+		if (textObj.options.breakLine) {
+			textObj.text + CRLF
+		}
 
 		// D: Add formatted textrun
 		strSlideXml += genXmlTextRun(textObj)
 	})
 
-	// STEP 5: Append 'endParaRPr' (when needed) and close current open paragraph
+	// STEP 4: Append 'endParaRPr' (when needed) and close current open paragraph
 	// NOTE: (ISSUE#20, ISSUE#193): Add 'endParaRPr' with font/size props or PPT default (Arial/18pt en-us) is used making row "too tall"/not honoring options
 	if (slideObj.type === SLIDE_OBJECT_TYPES.tablecell && (opts.fontSize || opts.fontFace)) {
 		if (opts.fontFace) {
@@ -1224,7 +1157,7 @@ export function genXmlTextBody(slideObj: ISlideObject | ITableCell): string {
 	}
 	strSlideXml += '</a:p>'
 
-	// STEP 6: Close the textBody
+	// STEP 5: Close the textBody
 	strSlideXml += tagClose
 
 	// LAST: Return XML
