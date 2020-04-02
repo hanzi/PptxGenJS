@@ -1,4 +1,4 @@
-/* PptxGenJS 3.2.0-beta @ 2020-04-02T13:00:48.152Z */
+/* PptxGenJS 3.2.0-beta @ 2020-04-02T16:39:11.881Z */
 import * as JSZip from 'jszip';
 
 /**
@@ -2218,16 +2218,21 @@ function genXmlTextRunProperties(opts, isDefault) {
 /**
  * Builds `<a:r></a:r>` text runs for `<a:p>` paragraphs in textBody
  * @param {IText} textObj - Text object
+ * @param {String} paragraphPropXml
  * @return {string} XML string
  */
-function genXmlTextRun(textObj) {
+function genXmlTextRun(textObj, paragraphPropXml) {
     // 1: ADD runProperties
     var runProperties = genXmlTextRunProperties(textObj.options, false);
     // 2: HANDLE LINE BREAKS
+    var lineJoiner = '</a:p><a:p>' + paragraphPropXml;
+    if (textObj.options.bullet) {
+        lineJoiner = '<a:br/>';
+    }
     return textObj.text.toString()
         .split(/\r*\n/)
         .map(function (line) { return "<a:r>" + runProperties + "<a:t>" + encodeXmlEntities(line) + "</a:t></a:r>"; })
-        .join('<a:br/>');
+        .join(lineJoiner);
 }
 /**
  * Builds `<a:bodyPr></a:bodyPr>` tag for "genXmlTextBody()"
@@ -2345,7 +2350,7 @@ function genXmlTextBody(slideObj) {
             textObj.text += CRLF;
         }
         // D: Add formatted textrun
-        strSlideXml += genXmlTextRun(textObj);
+        strSlideXml += genXmlTextRun(textObj, paragraphPropXml);
     });
     // STEP 4: Append 'endParaRPr' (when needed) and close current open paragraph
     // NOTE: (ISSUE#20, ISSUE#193): Add 'endParaRPr' with font/size props or PPT default (Arial/18pt en-us) is used making row "too tall"/not honoring options
