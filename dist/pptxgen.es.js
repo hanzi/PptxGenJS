@@ -1,4 +1,4 @@
-/* PptxGenJS 3.2.0-beta @ 2020-04-02T09:04:35.435Z */
+/* PptxGenJS 3.2.0-beta @ 2020-04-02T13:00:48.152Z */
 import * as JSZip from 'jszip';
 
 /**
@@ -2224,7 +2224,7 @@ function genXmlTextRun(textObj) {
     // 1: ADD runProperties
     var runProperties = genXmlTextRunProperties(textObj.options, false);
     // 2: HANDLE LINE BREAKS
-    return textObj.text
+    return textObj.text.toString()
         .split(/\r*\n/)
         .map(function (line) { return "<a:r>" + runProperties + "<a:t>" + encodeXmlEntities(line) + "</a:t></a:r>"; })
         .join('<a:br/>');
@@ -2305,7 +2305,7 @@ function genXmlTextBody(slideObj) {
         arrTextObjects = [{ text: slideObj.text.toString(), options: opts || {} }];
     }
     else {
-        arrTextObjects = slideObj.text;
+        arrTextObjects = slideObj.text.map(function (entry) { return ({ text: entry.text.toString(), options: entry.options }); });
     }
     // STEP 2: Add bodyProperties
     {

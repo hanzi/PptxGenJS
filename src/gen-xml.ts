@@ -1009,7 +1009,7 @@ function genXmlTextRun(textObj: IText): string {
 	const runProperties = genXmlTextRunProperties(textObj.options, false)
 
 	// 2: HANDLE LINE BREAKS
-	return textObj.text
+	return textObj.text.toString()
 		.split(/\r*\n/)
 		.map(line => `<a:r>${runProperties}<a:t>${encodeXmlEntities(line)}</a:t></a:r>`)
 		.join('<a:br/>');
