@@ -1093,7 +1093,7 @@ export function genXmlTextBody(slideObj: ISlideObject | ITableCell): string {
 	if (!Array.isArray(slideObj.text)) {
 		arrTextObjects = [{ text: slideObj.text.toString(), options: opts || {} }]
 	} else {
-		arrTextObjects = slideObj.text
+		arrTextObjects = slideObj.text.map((entry) => ({ text: entry.text.toString(), options: entry.options }))
 	}
 
 	// STEP 2: Add bodyProperties
