@@ -1002,17 +1002,23 @@ function genXmlTextRunProperties(opts: IObjectOptions | ITextOpts, isDefault: bo
 /**
  * Builds `<a:r></a:r>` text runs for `<a:p>` paragraphs in textBody
  * @param {IText} textObj - Text object
+ * @param {String} paragraphPropXml
  * @return {string} XML string
  */
-function genXmlTextRun(textObj: IText): string {
+function genXmlTextRun(textObj: IText, paragraphPropXml: string): string {
 	// 1: ADD runProperties
 	const runProperties = genXmlTextRunProperties(textObj.options, false)
 
 	// 2: HANDLE LINE BREAKS
+	let lineJoiner = '</a:p><a:p>' + paragraphPropXml
+	if (textObj.options.bullet) {
+		lineJoiner = '<a:br/>';
+	}
+
 	return textObj.text.toString()
 		.split(/\r*\n/)
 		.map(line => `<a:r>${runProperties}<a:t>${encodeXmlEntities(line)}</a:t></a:r>`)
-		.join('<a:br/>');
+		.join(lineJoiner);
 }
 
 /**
@@ -1136,7 +1142,7 @@ export function genXmlTextBody(slideObj: ISlideObject | ITableCell): string {
 		}
 
 		// D: Add formatted textrun
-		strSlideXml += genXmlTextRun(textObj)
+		strSlideXml += genXmlTextRun(textObj, paragraphPropXml)
 	})
 
 	// STEP 4: Append 'endParaRPr' (when needed) and close current open paragraph
