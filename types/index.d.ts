@@ -1196,6 +1196,7 @@ declare namespace PptxGenJS {
 	}
 	export interface IChartPropsDataTable {
 		dataTableFontSize?: number
+		dataTableFormatCode?: string
 		showDataTable?: boolean
 		showDataTableHorzBorder?: boolean
 		showDataTableKeys?: boolean

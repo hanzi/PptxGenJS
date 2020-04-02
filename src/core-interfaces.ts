@@ -222,6 +222,7 @@ export interface IChartPropsDataLabel {
 }
 export interface IChartPropsDataTable {
 	dataTableFontSize?: number
+	dataTableFormatCode?: string
 	showDataTable?: boolean
 	showDataTableHorzBorder?: boolean
 	showDataTableKeys?: boolean
@@ -622,4 +623,4 @@ export interface IPresentation {
 	slides: ISlideLib[]
 	subject: string
 	title: string
-} 
+}
